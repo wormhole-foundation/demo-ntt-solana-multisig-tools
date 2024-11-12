@@ -1,0 +1,231 @@
+{
+  "version": "2.0.0",
+  "name": "example_native_token_transfers",
+  "instructions": [
+    {
+      "name": "transferOwnership",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "upgradeLock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "programData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bpfLoaderUpgradeableProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimOwnership",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "upgradeLock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "programData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bpfLoaderUpgradeableProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setOutboundLimit",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rateLimit",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "SetOutboundLimitArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setInboundLimit",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rateLimit",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "SetInboundLimitArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPaused",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "pause",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "owner",
+            "docs": [
+              "Owner of the program."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "pendingOwner",
+            "docs": [
+              "Pending next owner (before claiming ownership)."
+            ],
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SetInboundLimitArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "u64"
+          },
+          {
+            "name": "chainId",
+            "type": {
+              "defined": "ChainId"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetOutboundLimitArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ChainId",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6001,
+      "name": "InvalidPendingOwner",
+      "msg": "InvalidPendingOwner"
+    }
+  ]
+}
