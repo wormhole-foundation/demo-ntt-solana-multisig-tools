@@ -13,7 +13,7 @@ By using these scripts, developers can:
 The project is organized as follows:
 
 ```plaintext
-project-root/
+demo-ntt-solana-multisig-tools/
 ├── src/
 │   ├── config/
 │   │   ├── idl.json                    # Interface description for the NTT program
@@ -46,8 +46,8 @@ Ensure the following dependencies are installed and configured:
 1. Clone the Repository:
 
 ```bash
-git clone
-cd <repository-name>
+git clone https://github.com/wormhole-foundation/demo-ntt-solana-multisig-tools.git
+cd demo-ntt-solana-multisig-tools
 ```
 
 2. Install Dependencies:
