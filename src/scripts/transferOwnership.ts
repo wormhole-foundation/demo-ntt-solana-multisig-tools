@@ -32,15 +32,21 @@ import 'dotenv/config';
 	);
 
 	// claiming ownership from temporary account with squads sdk!
-	// Getting the squads pubkey from the multisig-keys.json file:
+	// Getting the squads pubkey from the multisig-keys.json file (created in the createSquad script):
 	const multisigKeysPath = 'src/config/multisig-keys.json';
-	const { squadPubkey } = JSON.parse(fs.readFileSync(multisigKeysPath, 'utf-8'));
-	const squadsAddress = new PublicKey(squadPubkey);
+	const { multisigPubkey } = JSON.parse(fs.readFileSync(multisigKeysPath, 'utf-8'));
+	const multisigAddress = new PublicKey(multisigPubkey);
+
+	// Get deserialized multisig account info
+	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
+		solanaCon,
+		multisigAddress
+	);
 
 	// Derive the PDA of the Squads Vault
 	// this is going to be the Upgrade authority address, which is controlled by the Squad!
 	const [vaultPda] = multisig.getVaultPda({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		index: 0,
 	});
 	console.log(vaultPda);
@@ -86,12 +92,6 @@ import 'dotenv/config';
 	// this needs to be someone who has permissions to sign transactions for the squad!
 	const squadMember = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(walletJSON));
 
-	// Get deserialized multisig account info
-	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
-		solanaCon,
-		squadsAddress
-	);
-
 	// Get the updated transaction index
 	const currentTransactionIndex = Number(multisigInfo.transactionIndex);
 	const newTransactionIndex = BigInt(currentTransactionIndex + 1);
@@ -116,7 +116,7 @@ import 'dotenv/config';
 	});
 
 	const uploadTransactionIx = await multisig.instructions.vaultTransactionCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		// every squad has a global counter for transactions
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
@@ -127,7 +127,7 @@ import 'dotenv/config';
 
 	// proposal is squad specific!
 	const createProposalIx = multisig.instructions.proposalCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
 	});
@@ -141,7 +141,7 @@ import 'dotenv/config';
 	// only needed for testing purposes, if on devnet.
 	// Squads UI is only available on mainnet, which can be used instead!
 	const createApproveIx = multisig.instructions.proposalApprove({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		member: squadMember.publicKey,
 	});
@@ -161,7 +161,7 @@ import 'dotenv/config';
 
 	const executeClaimIx = await multisig.instructions.vaultTransactionExecute({
 		connection: solanaCon,
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		member: squadMember.publicKey,
 	});

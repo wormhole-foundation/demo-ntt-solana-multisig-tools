@@ -96,7 +96,8 @@ npm run transfer-ownership
 ```
 
 ### 3. `transferOwnershipMainnet.ts`
-Handles the transfer of NTT program ownership to a Squads vault on mainnet in addition to the Squads UI.
+Handles the transfer of NTT program ownership to a Squads vault on mainnet in addition to the Squads UI.  
+⚠️ **Warning:** Your entered multisig address address is not the same as the vault address!
 
 Run the script using the following command:
 
