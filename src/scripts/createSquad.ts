@@ -9,7 +9,7 @@ const fs = require('fs');
 	// Random Public Key that will be used to derive a multisig PDA
 	// This will need to be a signer on the transaction
 	const createKey = Keypair.generate();
-	// Creator should be a Keypair or a Wallet Adapter wallet
+	// TODO: adjust to your own key that will pay for gas and be a signer of the created multisig
 	const walletPath = 'src/config/keys.json';
 	const walletJSON = JSON.parse(fs.readFileSync(walletPath, 'utf-8'));
 	const creator = Keypair.fromSecretKey(Uint8Array.from(walletJSON));
@@ -58,7 +58,7 @@ const fs = require('fs');
 	// Save the multisig pubkey and creation signature to multisig-keys.json
 	const outputPath = 'src/config/multisig-keys.json';
 	const multisigData = {
-		squadPubkey: multisigPda.toBase58(),
+		multisigPubkey: multisigPda.toBase58(),
 		creationSignature: signature,
 	};
 

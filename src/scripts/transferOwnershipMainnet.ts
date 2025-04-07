@@ -27,13 +27,19 @@ import 'dotenv/config';
 		nttManagerProgramIdKey
 	);
 
-	// claiming ownership from temporary account with squads sdk!
-	// TODO: change to your squads pubkey
-	const squadsAddress = new PublicKey('CnTS7RmoqVh88grwarBdkXM63avL4yaz8mtjzxjAj9zn');
+	// TODO: change to your multisig address, which is not the same as the vault address!!
+	// can be retrieved in the setting of the Squads UI
+	const multisigAddress = new PublicKey('CnTS7RmoqVh88grwarBdkXM63avL4yaz8mtjzxjAj9zn');
+	// Get deserialized multisig account info
+	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
+		solanaCon,
+		multisigAddress
+	);
+
 	// Derive the PDA of the Squads Vault
 	// this is going to be the Upgrade authority address, which is controlled by the Squad!
 	const [vaultPda] = multisig.getVaultPda({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		index: 0,
 	});
 	console.log(vaultPda);
@@ -79,12 +85,6 @@ import 'dotenv/config';
 	// this needs to be someone who has permissions to sign transactions for the squad!
 	const squadMember = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(walletJSON));
 
-	// Get deserialized multisig account info
-	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
-		solanaCon,
-		squadsAddress
-	);
-
 	// Get the updated transaction index
 	const currentTransactionIndex = Number(multisigInfo.transactionIndex);
 	const newTransactionIndex = BigInt(currentTransactionIndex + 1);
@@ -109,7 +109,7 @@ import 'dotenv/config';
 	});
 
 	const uploadTransactionIx = await multisig.instructions.vaultTransactionCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		// every squad has a global counter for transactions
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
@@ -120,7 +120,7 @@ import 'dotenv/config';
 
 	// proposal is squad specific!
 	const createProposalIx = multisig.instructions.proposalCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
 	});
