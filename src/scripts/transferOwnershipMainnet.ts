@@ -20,6 +20,7 @@ import 'dotenv/config';
 	const nttManagerProgramId = process.env.NTT_MANAGER_PROGRAM_ID as string;
 	const nttManagerProgramIdKey = new PublicKey(nttManagerProgramId);
 
+	// TODO: change this to mainnet-beta for mainnet deployments or ideally to a private staked RPC connection
 	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
 
 	const [configPublicKey, _configPublicKeyBump] = await PublicKey.findProgramAddress(
@@ -57,6 +58,7 @@ import 'dotenv/config';
 		bpfLoaderUpgradeableProgramPublicKey
 	);
 
+	// TODO: change this to mainnet-beta for mainnet deployments
 	const anchorConnection = new anchor.web3.Connection(
 		anchor.web3.clusterApiUrl('devnet'),
 		'confirmed'
