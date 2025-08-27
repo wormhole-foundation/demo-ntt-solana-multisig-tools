@@ -56,11 +56,15 @@ cd demo-ntt-solana-multisig-tools
 npm install
 ```
 
-3. Create a `.env` File. In the root directory, create a `.env` file and add your `NTT Manager Program ID`:
+3. Configure Script Presets:
 
-```bash
-NTT_MANAGER_PROGRAM_ID="INSERT_MANAGER_PROGRAM_ID"
-```
+   - **`transferOwnership.ts`** and **`transferOwnershipMainnet.ts`**: Update the `tokenConfig` object with:
+     - `ntt_manager`: Your NTT Manager Program ID
+     - `squads_address`: Your Squads multisig address  
+     - `vault_pda`: Your Squads vault PDA (only for mainnet script)
+     - `send_txn`: Set to `false` for dry runs, `true` to execute transactions
+   - **`createSquad.ts`**: Update `walletPath`, `members` or `threshold`
+   - **`manageLimits.ts`**: Update `walletPath`, NTT manager program ID, rate limits, chain selection or pause status
 
 4. Configure Your Wallet Keypair:
 
@@ -73,13 +77,18 @@ NTT_MANAGER_PROGRAM_ID="INSERT_MANAGER_PROGRAM_ID"
 This script creates a new Squads multisig instance on Solana's Devnet.
 Sets up member permissions and threshold requirements.
 
+**Configurable Values:**
+- **`walletPath`**: Path to your wallet keypair JSON file
+- **`members`**: List of multisig members with their permissions 
+- **`threshold`**: Number of votes required to approve transactions 
+
 Run the script using the following command:
 
 ```bash
 npm run create-squad
 ```
 
-> **Note:** The script generates a `multisig-keys.json` file containing the public keys of the Squads multisig instance
+> **Note:** The script generates a `multisig-info.json` file containing the public keys of the Squads multisig instance
 
 ### 2. `transferOwnership.ts`
 Handles the transfer of NTT program ownership to a Squads vault on Devnet.
@@ -99,19 +108,30 @@ npm run transfer-ownership
 Handles the transfer of NTT program ownership to a Squads vault on mainnet in addition to the Squads UI.  
 ⚠️ **Warning:** Your entered multisig address address is not the same as the vault address!
 
+**Note:** This script only moves ownership to a temporary account. The actual ownership transfer to the Squads vault must be completed manually through the Squads UI by approving and executing the created proposal.
+
 Run the script using the following command:
 
 ```bash
 npm run transfer-ownership-mainnet
 ```
 
-### 4. `managageLimits.ts`
+### 4. `manageLimits.ts`
 Manages NTT program parameters through Squads multisig.
 
 **Key Features:**
 - Sets inbound and outbound rate limits for token transfers
 - Implements pause/unpause functionality
 - Creates and executes Squads proposals for parameter changes
+
+**Configurable Values:**
+- **`walletPath`**: Path to your wallet keypair JSON file
+- **`nttManagerProgramId`**: Your NTT Manager Program ID 
+- **`outbountLimit`**: Outbound transfer rate limit in token units 
+- **`inboundLimit`**: Inbound transfer rate limit in token units 
+- **`chain`**: Target chain for inbound limits (currently 'Sepolia')
+- **`paused`**: Whether the contract is paused 
+- **`instructions`**: Which instruction to execute (currently outboundLimitInstruction)
 
 Run the script using the following command:
 
@@ -123,15 +143,18 @@ npm run manage-limits
 
 Each script requires:
 - A wallet keypair JSON file
-- Specific program IDs and addresses
-- Connection to Solana Devnet
+- **`transferOwnership.ts`** and **`transferOwnershipMainnet.ts`**: Updated `tokenConfig` preset
+- **`createSquad.ts`**: Wallet path, member list, threshold, and timeLock settings
+- **`manageLimits.ts`**: Wallet path, rate limit values, chain selection or pause configuration
+- Connection to appropriate Solana network (Devnet/Mainnet)
 
 ## Important Notes
 
 1. Update the following TODOs in each script:
-   - Wallet paths
-   - NTT Manager Program ID: defined in the `.env` file as `NTT_MANAGER_PROGRAM_ID`
-   - Squads public keys: generated in the Create Squad step and saved in `multisig-keys.json`
+   - **Wallet paths**: Update in all scripts to point to your keypair file
+   - **`tokenConfig` preset values**: For `transferOwnership.ts` and `transferOwnershipMainnet.ts`
+   - **Multisig configuration**: For `createSquad.ts` (members, threshold)
+   - **Rate limits and parameters**: For `manageLimits.ts` (limits, chain, pause status)
 
 2. Transaction signing:
    - Multiple squad members may need to sign based on the threshold

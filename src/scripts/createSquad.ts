@@ -52,16 +52,16 @@ const fs = require('fs');
 		treasury: configTreasury,
 	});
 
-	console.log('New squad pubkey: ', multisigPda);
-	console.log('Multisig created: ', signature);
+	console.log('New squad pubkey: ', multisigPda.toBase58());
+	console.log('Multisig creation signature: ', signature);
 
 	// Save the multisig pubkey and creation signature to multisig-keys.json
-	const outputPath = 'src/config/multisig-keys.json';
+	const outputPath = 'src/config/multisig-info.json';
 	const multisigData = {
 		multisigPubkey: multisigPda.toBase58(),
 		creationSignature: signature,
 	};
 
 	fs.writeFileSync(outputPath, JSON.stringify(multisigData, null, 2));
-	console.log(`Multisig keys saved to ${outputPath}`);
+	console.log(`Multisig info saved to ${outputPath}`);
 })();
