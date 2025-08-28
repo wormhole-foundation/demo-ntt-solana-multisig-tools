@@ -12,13 +12,16 @@ const fs = require('fs');
 // Single token configuration preset
 const tokenConfig = {
 	// TODO: change to your NTT manager address
-	ntt_manager: "nttCaQKV7n2kQVAkX8LMD4VX2Fb5D6CoxNMaMPj7Fok", 
-	// TODO: change to your multisig address
-	squads_address: "45S975zzDtnmx6q1NatWLPYLd1ptubUCigdRQR7Cn31W", 
-	// TODO: change to your Squads vault, which is not the same as the multisig address!!
-	vault_pda: "3Zc77zF9zghpjU97CVoZQ8QswC8bwpcX55KFQdJcRkCc", 
-	send_txn: true, // Set to false for dry run
+	ntt_manager: "nttJX5WXYk5pnLEnWNZeWNQrymMi6g9L8zNdUBhR7cA", 
+	// TODO: change to your multisig account
+	multisig_account: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", 
+	// TODO: change to your Squads vault, which is not the same as the multisig address! Can be found in the Settings page of the Squads UI.
+	squads_vault_pda: "7WyYvSUaT7X7U8axMxvatDyQAeTgZWJWHxa6HxT4s9kA", 
+	send_txn: false, // Set to false for dry run
 } as const;
+
+// TODO: update RPC endpoint configuration
+const RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=?';
 
 (async () => {
 	// TODO: needs to be token owner & creator of the Squads multisig
@@ -28,19 +31,17 @@ const tokenConfig = {
 
 	const nttManagerProgramId = tokenConfig.ntt_manager;
 	const nttManagerProgramIdKey = new PublicKey(nttManagerProgramId);
-
 	console.log("Token config:", tokenConfig);
 
 	// TODO: change this to mainnet-beta for mainnet deployments or ideally to a private staked RPC connection
-	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
-
+	const solanaCon = new solanaConnection(RPC_ENDPOINT);
 	const [configPublicKey, _configPublicKeyBump] = PublicKey.findProgramAddressSync(
 		[Buffer.from('config')],
 		nttManagerProgramIdKey
 	);
 
 	// can be retrieved in the setting of the Squads UI
-	const multisigAddress = new PublicKey(tokenConfig.squads_address);
+	const multisigAddress = new PublicKey(tokenConfig.multisig_account);
 	
 	// Get deserialized multisig account info
 	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
@@ -57,10 +58,10 @@ const tokenConfig = {
 	console.log(`Derived vault PDA: ${vaultPda}`);
 
 	// Validate that calculated vault PDA matches the preset
-	if (vaultPda.toString() !== tokenConfig.vault_pda) {
+	if (vaultPda.toString() !== tokenConfig.squads_vault_pda) {
 		console.log('Calculated vault PDA does not match preset. Please check configuration.');
 		console.log(`Calculated vault PDA: ${vaultPda}`);
-		console.log(`Expected vault PDA: ${tokenConfig.vault_pda}`);
+		console.log(`Expected vault PDA: ${tokenConfig.squads_vault_pda}`);
 		return;
 	}
 
@@ -79,9 +80,9 @@ const tokenConfig = {
 		bpfLoaderUpgradeableProgramPublicKey
 	);
 
-	// TODO: change this to mainnet-beta for mainnet deployments
+	//TODO: change this to mainnet-beta for mainnet deployments
 	const anchorConnection = new anchor.web3.Connection(
-		anchor.web3.clusterApiUrl('devnet'),
+		RPC_ENDPOINT,
 		'confirmed'
 	);
 	const wallet = new anchor.Wallet(walletKeypair);

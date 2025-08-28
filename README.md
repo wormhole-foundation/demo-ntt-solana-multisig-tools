@@ -60,8 +60,8 @@ npm install
 
    - **`transferOwnership.ts`** and **`transferOwnershipMainnet.ts`**: Update the `tokenConfig` object with:
      - `ntt_manager`: Your NTT Manager Program ID
-     - `squads_address`: Your Squads multisig address  
-     - `vault_pda`: Your Squads vault PDA (only for mainnet script)
+     - `multisig_account`: Your Squads multisig account  
+     - `squads_vault_pda`: Your Squads vault PDA (only for mainnet script)
      - `send_txn`: Set to `false` for dry runs, `true` to execute transactions
    - **`createSquad.ts`**: Update `walletPath`, `members` or `threshold`
    - **`manageLimits.ts`**: Update `walletPath`, NTT manager program ID, rate limits, chain selection or pause status
@@ -98,6 +98,12 @@ Handles the transfer of NTT program ownership to a Squads vault on Devnet.
 - Creates and executes a transaction proposal through Squads
 - Claims ownership using the Squads vault
 
+**Configurable Variables:**
+- **`RPC_ENDPOINT`**: RPC endpoint configuration that can be changed to a custom RPC endpoint if needed.
+- **`tokenConfig.ntt_manager`**: Your NTT Manager Program ID on devnet
+- **`tokenConfig.send_txn`**: Set to `false` for dry runs, `true` to execute transactions
+- **`tokenOwnerWalletPath`**: Path to your wallet keypair JSON file
+
 Run the script using the following command:
 
 ```bash
@@ -106,7 +112,14 @@ npm run transfer-ownership
 
 ### 3. `transferOwnershipMainnet.ts`
 Handles the transfer of NTT program ownership to a Squads vault on mainnet in addition to the Squads UI.  
-⚠️ **Warning:** Your entered multisig address address is not the same as the vault address!
+⚠️ **Warning:** Your entered multisig account address is not the same as the vault address!
+
+**Configurable Variables:**
+- **`RPC_ENDPOINT`**: RPC endpoint configuration for mainnet that ideally should use a custom RPC endpoint for Solana mainnet.
+- **`tokenConfig.ntt_manager`**: Your NTT Manager Program ID on mainnet
+- **`tokenConfig.multisig_account`**: Your Squads multisig account address
+- **`tokenConfig.squads_vault_pda`**: Your Squads vault PDA (found in Squads UI Settings)
+- **`tokenConfig.send_txn`**: Set to `false` for dry runs, `true` to execute transactions
 
 **Note:** This script only moves ownership to a temporary account. The actual ownership transfer to the Squads vault must be completed manually through the Squads UI by approving and executing the created proposal.
 
@@ -132,33 +145,10 @@ Manages NTT program parameters through Squads multisig.
 - **`chain`**: Target chain for inbound limits (currently 'Sepolia')
 - **`paused`**: Whether the contract is paused 
 - **`instructions`**: Which instruction to execute (currently outboundLimitInstruction)
+- **`RPC_ENDPOINT`**: RPC endpoint configuration (defaults to devnet)
 
 Run the script using the following command:
 
 ```bash
 npm run manage-limits
 ```
-
-## Configuration Requirements
-
-Each script requires:
-- A wallet keypair JSON file
-- **`transferOwnership.ts`** and **`transferOwnershipMainnet.ts`**: Updated `tokenConfig` preset
-- **`createSquad.ts`**: Wallet path, member list, threshold, and timeLock settings
-- **`manageLimits.ts`**: Wallet path, rate limit values, chain selection or pause configuration
-- Connection to appropriate Solana network (Devnet/Mainnet)
-
-## Important Notes
-
-1. Update the following TODOs in each script:
-   - **Wallet paths**: Update in all scripts to point to your keypair file
-   - **`tokenConfig` preset values**: For `transferOwnership.ts` and `transferOwnershipMainnet.ts`
-   - **Multisig configuration**: For `createSquad.ts` (members, threshold)
-   - **Rate limits and parameters**: For `manageLimits.ts` (limits, chain, pause status)
-
-2. Transaction signing:
-   - Multiple squad members may need to sign based on the threshold
-   - Proper permissions must be set for transaction execution
-
-3. Script Customization:
-   - Adjust rate limits and other parameters in manage-limits as per your application requirements

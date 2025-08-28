@@ -11,6 +11,9 @@ const fs = require('fs');
 import '@wormhole-foundation/sdk-solana-ntt';
 import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 
+// TODO: update RPC endpoint configuration
+const RPC_ENDPOINT = anchor.web3.clusterApiUrl('devnet');
+
 (async () => {
 	// TODO: needs to be one of the signers of the Squad
 	const walletPath = 'src/config/keys.json';
@@ -21,7 +24,7 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	const nttManagerProgramId = "nttCaQKV7n2kQVAkX8LMD4VX2Fb5D6CoxNMaMPj7Fok";
 	const programIdKey = new PublicKey(nttManagerProgramId);
 
-	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
+	const solanaCon = new solanaConnection(RPC_ENDPOINT);
 
 	const [configPublicKey, _] = PublicKey.findProgramAddressSync(
 		[Buffer.from('config')],
@@ -41,7 +44,7 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	console.log(vaultPda);
 
 	const anchorConnection = new anchor.web3.Connection(
-		anchor.web3.clusterApiUrl('devnet'),
+		RPC_ENDPOINT,
 		'confirmed'
 	);
 	const wallet = new anchor.Wallet(walletKeypair);

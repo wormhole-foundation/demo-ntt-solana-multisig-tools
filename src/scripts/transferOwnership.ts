@@ -9,10 +9,13 @@ import idl from '../config/idl.json';
 import * as multisig from '@sqds/multisig';
 const fs = require('fs');
 
+// TODO: update RPC endpoint configuration
+const RPC_ENDPOINT = anchor.web3.clusterApiUrl('devnet');
+
 // Single token configuration preset for devnet
 const tokenConfig = {
 	ntt_manager: "nttCaQKV7n2kQVAkX8LMD4VX2Fb5D6CoxNMaMPj7Fok", // TODO: change to your NTT manager address
-	send_txn: true, // Set to false for dry run
+	send_txn: false, // Set to false for dry run
 } as const;
 
 (async () => {
@@ -27,7 +30,7 @@ const tokenConfig = {
 	console.log("Token config:", tokenConfig);
 	console.log(`Using public key: ${walletKeypair.publicKey}`);
 
-	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
+	const solanaCon = new solanaConnection(RPC_ENDPOINT);
 
 	const [configPublicKey, _configPublicKeyBump] = PublicKey.findProgramAddressSync(
 		[Buffer.from('config')],
@@ -71,7 +74,7 @@ const tokenConfig = {
 	);
 
 	const anchorConnection = new anchor.web3.Connection(
-		anchor.web3.clusterApiUrl('devnet'),
+		RPC_ENDPOINT,
 		'confirmed'
 	);
 	const wallet = new anchor.Wallet(walletKeypair);
