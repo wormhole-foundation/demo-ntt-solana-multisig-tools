@@ -7,10 +7,12 @@ import {
 } from '@solana/web3.js';
 import * as multisig from '@sqds/multisig';
 const fs = require('fs');
-import 'dotenv/config';
 
 import '@wormhole-foundation/sdk-solana-ntt';
 import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
+
+// TODO: update RPC endpoint configuration
+const RPC_ENDPOINT = anchor.web3.clusterApiUrl('devnet');
 
 (async () => {
 	// TODO: needs to be one of the signers of the Squad
@@ -18,33 +20,31 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	const walletJSON = JSON.parse(fs.readFileSync(walletPath, 'utf-8'));
 	const walletKeypair = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(walletJSON));
 
-	const nttManagerProgramId = process.env.NTT_MANAGER_PROGRAM_ID as string;
-
-	if (!nttManagerProgramId) {
-		throw new Error('NTT_MANAGER_PROGRAM_ID not set in .env file');
-	}
+	//TODO: change to your NTT manager address
+	const nttManagerProgramId = "nttCaQKV7n2kQVAkX8LMD4VX2Fb5D6CoxNMaMPj7Fok";
 	const programIdKey = new PublicKey(nttManagerProgramId);
 
-	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
+	const solanaCon = new solanaConnection(RPC_ENDPOINT);
 
-	const [configPublicKey, _] = await PublicKey.findProgramAddress(
+	const [configPublicKey, _] = PublicKey.findProgramAddressSync(
 		[Buffer.from('config')],
 		programIdKey
 	);
 
 	// Getting the squads pubkey from the multisig-keys.json file:
-	const multisigKeysPath = 'src/config/multisig-keys.json';
-	const { squadPubkey } = JSON.parse(fs.readFileSync(multisigKeysPath, 'utf-8'));
-	const squadsAddress = new PublicKey(squadPubkey);
+	const multisigKeysPath = 'src/config/multisig-info.json';
+	const { multisigPubkey } = JSON.parse(fs.readFileSync(multisigKeysPath, 'utf-8'));
+	const multisigAddress = new PublicKey(multisigPubkey);
+	console.log("MultisigAddress:", multisigAddress.toBase58());
 
 	const [vaultPda] = multisig.getVaultPda({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		index: 0,
 	});
 	console.log(vaultPda);
 
 	const anchorConnection = new anchor.web3.Connection(
-		anchor.web3.clusterApiUrl('devnet'),
+		RPC_ENDPOINT,
 		'confirmed'
 	);
 	const wallet = new anchor.Wallet(walletKeypair);
@@ -59,7 +59,7 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	// Get deserialized multisig account info
 	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
 		solanaCon,
-		squadsAddress
+		multisigAddress
 	);
 
 	// Get the updated transaction index
@@ -72,10 +72,11 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 		'2.0.0' // ntt solana version parameter
 	);
 
-	const [outboundLimitPublicKey] = await PublicKey.findProgramAddress(
+	const [outboundLimitPublicKey] = PublicKey.findProgramAddressSync(
 		[Buffer.from('outbox_rate_limit')],
 		programIdKey
 	);
+	//TODO: change to your desired outbound limit
 	// needs to have the correct amount of decimals for the respective chain
 	const outbountLimit = new anchor.BN(2150000000); // 2.150000000 tokens on Solana
 	const outboundLimitInstruction = await program.methods
@@ -87,14 +88,15 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 		})
 		.instruction();
 
-	const [inboundrateLimitPublicKey] = await PublicKey.findProgramAddress(
+	const [inboundrateLimitPublicKey] = PublicKey.findProgramAddressSync(
 		[Buffer.from('inbox_rate_limit')],
 		programIdKey
 	);
 	// List of ChainIds: https://github.com/wormhole-foundation/wormhole-sdk-ts/blob/fa4ba4bc349a7caada809f209090d79a3c5962fe/core/base/src/constants/chains.ts#L6
+	//TODO: change to your desired inbound limit
 	const inboundLimit = new anchor.BN(1150000000); // 1.15
 	// will only work if the specific chain inbound limit was initialized (done with add-chain command)
-	const inboundLimitInstruction = await NTT.setInboundLimit(program as any, {
+	const inboundLimitInstruction = await NTT.createSetInboundLimitInstruction(program as any, {
 		owner: vaultPda,
 		chain: 'Sepolia',
 		limit: new anchor.BN(inboundLimit.toString()),
@@ -110,11 +112,11 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 		payerKey: vaultPda,
 		recentBlockhash: (await solanaCon.getLatestBlockhash()).blockhash,
 		//TODO: modify this based on the instruction you want to perform (outboundLimitInstruction / inboundLimitInstruction or pauseInstruction)
-		instructions: [inboundLimitInstruction],
+		instructions: [outboundLimitInstruction],
 	});
 
 	const uploadTransactionIx = await multisig.instructions.vaultTransactionCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		// every squad has a global counter for transactions
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
@@ -125,7 +127,7 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 
 	// proposal is squad specific!
 	const createProposalIx = multisig.instructions.proposalCreate({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		creator: squadMember.publicKey,
 	});
@@ -134,7 +136,7 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	// only needed for testing purposes, if on devnet.
 	// Squads UI is only available on mainnet, which can be used instead!
 	const createApproveIx = multisig.instructions.proposalApprove({
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		member: squadMember.publicKey,
 	});
@@ -151,14 +153,18 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	transaction.sign([squadMember]);
 	const signature = await solanaCon.sendTransaction(transaction);
 
-	await solanaCon.confirmTransaction(signature);
+	await solanaCon.confirmTransaction({
+		signature: signature,
+		blockhash: (await solanaCon.getLatestBlockhash()).blockhash,
+		lastValidBlockHeight: (await solanaCon.getLatestBlockhash()).lastValidBlockHeight,
+	}, 'finalized');
 
 	console.log(signature);
 	console.log('Squad proposal created and approved.');
 
 	const executeClaimIx = await multisig.instructions.vaultTransactionExecute({
 		connection: solanaCon,
-		multisigPda: squadsAddress,
+		multisigPda: multisigAddress,
 		transactionIndex: newTransactionIndex,
 		member: squadMember.publicKey,
 	});
@@ -175,7 +181,11 @@ import { getNttProgram, NTT } from '@wormhole-foundation/sdk-solana-ntt';
 	transactionFinal.sign([squadMember]);
 	const signatureFinal = await solanaCon.sendTransaction(transactionFinal);
 	console.log(signatureFinal);
-	await solanaCon.confirmTransaction(signatureFinal);
+	await solanaCon.confirmTransaction({
+		signature: signatureFinal,
+		blockhash: (await solanaCon.getLatestBlockhash()).blockhash,
+		lastValidBlockHeight: (await solanaCon.getLatestBlockhash()).lastValidBlockHeight,
+	});
 
 	console.log('Adjusting rate limits or paused the contract successfully.');
 })();

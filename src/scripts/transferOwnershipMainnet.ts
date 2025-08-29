@@ -8,7 +8,20 @@ import {
 import * as multisig from '@sqds/multisig';
 import idl from '../config/idl.json';
 const fs = require('fs');
-import 'dotenv/config';
+
+// Single token configuration preset
+const tokenConfig = {
+	// TODO: change to your NTT manager address
+	ntt_manager: "nttJX5WXYk5pnLEnWNZeWNQrymMi6g9L8zNdUBhR7cA", 
+	// TODO: change to your multisig account
+	multisig_account: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", 
+	// TODO: change to your Squads vault, which is not the same as the multisig address! Can be found in the Settings page of the Squads UI.
+	squads_vault_pda: "7WyYvSUaT7X7U8axMxvatDyQAeTgZWJWHxa6HxT4s9kA", 
+	send_txn: false, // Set to false for dry run
+} as const;
+
+// TODO: update RPC endpoint configuration
+const RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=?';
 
 (async () => {
 	// TODO: needs to be token owner & creator of the Squads multisig
@@ -16,21 +29,20 @@ import 'dotenv/config';
 	const walletJSON = JSON.parse(fs.readFileSync(tokenOwnerWalletPath, 'utf-8'));
 	const walletKeypair = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(walletJSON));
 
-	// TODO: change to your NTT manager address from the .env file
-	const nttManagerProgramId = process.env.NTT_MANAGER_PROGRAM_ID as string;
+	const nttManagerProgramId = tokenConfig.ntt_manager;
 	const nttManagerProgramIdKey = new PublicKey(nttManagerProgramId);
+	console.log("Token config:", tokenConfig);
 
 	// TODO: change this to mainnet-beta for mainnet deployments or ideally to a private staked RPC connection
-	const solanaCon = new solanaConnection('https://api.devnet.solana.com');
-
-	const [configPublicKey, _configPublicKeyBump] = await PublicKey.findProgramAddress(
+	const solanaCon = new solanaConnection(RPC_ENDPOINT);
+	const [configPublicKey, _configPublicKeyBump] = PublicKey.findProgramAddressSync(
 		[Buffer.from('config')],
 		nttManagerProgramIdKey
 	);
 
-	// TODO: change to your multisig address, which is not the same as the vault address!!
 	// can be retrieved in the setting of the Squads UI
-	const multisigAddress = new PublicKey('CnTS7RmoqVh88grwarBdkXM63avL4yaz8mtjzxjAj9zn');
+	const multisigAddress = new PublicKey(tokenConfig.multisig_account);
+	
 	// Get deserialized multisig account info
 	const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
 		solanaCon,
@@ -43,24 +55,34 @@ import 'dotenv/config';
 		multisigPda: multisigAddress,
 		index: 0,
 	});
-	console.log(vaultPda);
+	console.log(`Derived vault PDA: ${vaultPda}`);
+
+	// Validate that calculated vault PDA matches the preset
+	if (vaultPda.toString() !== tokenConfig.squads_vault_pda) {
+		console.log('Calculated vault PDA does not match preset. Please check configuration.');
+		console.log(`Calculated vault PDA: ${vaultPda}`);
+		console.log(`Expected vault PDA: ${tokenConfig.squads_vault_pda}`);
+		return;
+	}
+
 	// temporary pda, needed before claim instruction
-	const [upgradeLockPublicKey, _upgradeLockPublicKey] = await PublicKey.findProgramAddress(
+	const [upgradeLockPublicKey, _upgradeLockPublicKey] = PublicKey.findProgramAddressSync(
 		[Buffer.from('upgrade_lock')],
 		nttManagerProgramIdKey
 	);
+	
 	//   The programDataPublicKey is the PDA that stores the program's data
 	const bpfLoaderUpgradeableProgramPublicKey = new PublicKey(
 		'BPFLoaderUpgradeab1e11111111111111111111111'
 	);
-	const [programDataPublicKey, _programDataBump] = await PublicKey.findProgramAddress(
+	const [programDataPublicKey, _programDataBump] = PublicKey.findProgramAddressSync(
 		[nttManagerProgramIdKey.toBuffer()],
 		bpfLoaderUpgradeableProgramPublicKey
 	);
 
-	// TODO: change this to mainnet-beta for mainnet deployments
+	//TODO: change this to mainnet-beta for mainnet deployments
 	const anchorConnection = new anchor.web3.Connection(
-		anchor.web3.clusterApiUrl('devnet'),
+		RPC_ENDPOINT,
 		'confirmed'
 	);
 	const wallet = new anchor.Wallet(walletKeypair);
@@ -70,7 +92,15 @@ import 'dotenv/config';
 	anchor.setProvider(provider);
 
 	const program = new anchor.Program(idl as anchor.Idl, nttManagerProgramId, provider);
-	// delegate ownership to a temporary account!
+
+	console.log(`Upgrade lock: ${upgradeLockPublicKey.toString()}`);
+
+	if (!tokenConfig.send_txn) {
+		console.log("send_txn is false, so we are doing a dry run");
+		return;
+	}
+
+	console.log("Transferring ownership to temporary account...");
 	await program.methods
 		.transferOwnership()
 		.accounts({
@@ -83,6 +113,7 @@ import 'dotenv/config';
 		})
 		.signers([wallet.payer])
 		.rpc();
+	console.log("Ownership transfer to temporary account completed.");
 
 	// this needs to be someone who has permissions to sign transactions for the squad!
 	const squadMember = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(walletJSON));
@@ -137,8 +168,17 @@ import 'dotenv/config';
 	// needs to be signed by as many squads members to reach threshold,
 	// for that we also execute the proposalApprove method
 	transactionFinal.sign([squadMember]);
-	const signatureFinal = await solanaCon.sendTransaction(transactionFinal);
-	await solanaCon.confirmTransaction(signatureFinal);
 
-	console.log('Ownership transfer completed successfully.');
+	console.log("Sending the final transaction...");
+	const signatureFinal = await solanaCon.sendTransaction(transactionFinal);
+	console.log(`Transaction signature: ${signatureFinal}`);
+
+	// awaiting transaction to be confirmed
+	await solanaCon.confirmTransaction({
+		signature: signatureFinal,
+		blockhash: (await solanaCon.getLatestBlockhash()).blockhash,
+		lastValidBlockHeight: (await solanaCon.getLatestBlockhash()).lastValidBlockHeight,
+	});
+
+	console.log('Claim the ownership by confirming the transaction in the Squads UI!');
 })();
