@@ -13,6 +13,6 @@
 		"@solana/web3.js": "^1.98.4",
 		"@sqds/multisig": "^2.1.4",
 		"@wormhole-foundation/sdk": "^3.4.3",
-		"@wormhole-foundation/sdk-solana-ntt": "^2.0.1"
+		"@wormhole-foundation/sdk-solana-ntt": "^3.0.1"
 	}
 }
