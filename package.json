@@ -3,7 +3,8 @@
 		"create-squad": "npx ts-node src/scripts/createSquad.ts",
 		"transfer-ownership": "npx ts-node src/scripts/transferOwnership.ts",
 		"transfer-ownership-mainnet": "npx ts-node src/scripts/transferOwnershipMainnet.ts",
-		"manage-limits": "npx ts-node src/scripts/manageLimits.ts"
+		"manage-limits": "npx ts-node src/scripts/manageLimits.ts",
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"typescript": "^5.5.4"
