@@ -14,6 +14,6 @@
 		"@solana/web3.js": "^1.98.4",
 		"@sqds/multisig": "^2.1.4",
 		"@wormhole-foundation/sdk": "^4.9.1",
-		"@wormhole-foundation/sdk-solana-ntt": "^4.0.10"
+		"@wormhole-foundation/sdk-solana-ntt": "^4.0.11"
 	}
 }
